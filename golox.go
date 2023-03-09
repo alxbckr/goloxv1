@@ -4,24 +4,18 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+
+	"alxbckr.github.com/goloxv1/scanner"
 )
 
-func report(e ScannerError) {
-	fmt.Println(e)
-}
-
-func run(source string) error {
-	scanner := NewScanner(source)
-	tokens, err := scanner.scanTokens()
-	if err != nil {
-		return err
-	}
+func run(source string) {
+	scan := scanner.NewScanner(source)
+	tokens := scan.ScanTokens()
 
 	// For now, just print the tokens.
 	for _, token := range tokens {
 		fmt.Println(token)
 	}
-	return &ScannerError{}
 }
 
 func runPrompt() {
@@ -33,10 +27,8 @@ func runPrompt() {
 		if line == "" {
 			return
 		}
-		err := run(line)
-		if err != nil {
-			fmt.Println(err)
-		}
+		run(line)
+		scanner.GetScannerError().Reset()
 	}
 }
 
@@ -45,20 +37,20 @@ func runFile(path string) {
 	if err != nil {
 		panic(err)
 	}
-	err = run(string(bytes))
-	if err != nil {
-		fmt.Println(err)
+	run(string(bytes))
+	// Indicate an error in the exit code.
+	if scanner.GetScannerError().GetHadError() {
 		os.Exit(65)
 	}
 }
 
 func main() {
 	args := os.Args
-	if len(args) > 1 {
+	if len(args) > 2 {
 		fmt.Printf("Usage: golox [script]")
 		os.Exit(64)
-	} else if len(args) == 1 {
-		runFile(args[0])
+	} else if len(args) == 2 {
+		runFile(args[1])
 	} else {
 		runPrompt()
 	}

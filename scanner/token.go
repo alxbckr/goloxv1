@@ -1,4 +1,6 @@
-package main
+package scanner
+
+import "fmt"
 
 type Token struct {
 	tokenType TokenType
@@ -16,7 +18,6 @@ func NewToken(tokenType TokenType, lexeme string, literal interface{}, line int)
 	}
 }
 
-func (t *Token) String() string {
-	//return t.tokenType.String() + " " + t.lexeme + " " + t.literal
-	return t.tokenType.String() + " " + t.lexeme
+func (t Token) String() string {
+	return t.tokenType.String() + " " + t.lexeme + " " + fmt.Sprintf("%v", t.literal)
 }

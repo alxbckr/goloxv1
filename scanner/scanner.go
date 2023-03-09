@@ -1,7 +1,6 @@
-package main
+package scanner
 
 import (
-	"errors"
 	"strconv"
 )
 
@@ -27,85 +26,67 @@ func NewScanner(source string) *Scanner {
 	}
 }
 
-func (s *Scanner) scanTokens() ([]Token, error) {
-	var tokens []Token
+func (s *Scanner) ScanTokens() []Token {
 	for !s.isAtEnd() {
 		// We are at the beginning of the next lexeme.
 		s.start = s.current
-		err := s.scanToken()
-		if err != nil {
-			return nil, err
-		}
+		s.scanToken()
 	}
-	tokens = append(tokens, *NewToken(EOF, "", "", s.line))
-	return tokens, nil
+	s.tokens = append(s.tokens, *NewToken(EOF, "", "", s.line))
+	return s.tokens
 }
 
 func (s *Scanner) isAtEnd() bool {
 	return s.current >= len(s.source)
 }
 
-func (s *Scanner) scanToken() error {
+func (s *Scanner) scanToken() {
 	c := s.advance()
 	switch c {
 	case '(':
 		s.addToken(LEFT_PAREN)
-		break
 	case ')':
 		s.addToken(RIGHT_PAREN)
-		break
 	case '{':
 		s.addToken(LEFT_BRACE)
-		break
 	case '}':
 		s.addToken(RIGHT_BRACE)
-		break
 	case ',':
 		s.addToken(COMMA)
-		break
 	case '.':
 		s.addToken(DOT)
-		break
 	case '-':
 		s.addToken(MINUS)
-		break
 	case '+':
 		s.addToken(PLUS)
-		break
 	case ';':
 		s.addToken(SEMICOLON)
-		break
 	case '*':
 		s.addToken(STAR)
-		break
 	case '!':
 		if s.match('=') {
 			s.addToken(BANG_EQUAL)
 		} else {
 			s.addToken(BANG)
 		}
-		break
 	case '=':
 		if s.match('=') {
 			s.addToken(EQUAL_EQUAL)
 		} else {
 			s.addToken(EQUAL)
 		}
-		break
 	case '<':
 		if s.match('=') {
 			s.addToken(LESS_EQUAL)
 		} else {
 			s.addToken(LESS)
 		}
-		break
 	case '>':
 		if s.match('=') {
 			s.addToken(GREATER_EQUAL)
 		} else {
 			s.addToken(GREATER)
 		}
-		break
 	case '/':
 		if s.match('/') {
 			// A comment goes until the end of the line.
@@ -115,40 +96,29 @@ func (s *Scanner) scanToken() error {
 		} else {
 			s.addToken(SLASH)
 		}
-		break
 	case ' ':
 	case '\r':
 	case '\t':
 		// Ignore whitespace.
-		break
 	case '\n':
 		s.line++
-		break
 	case '"':
-		err := s.string()
-		if err != nil {
-			return err
-		}
-		break
+		s.string()
 	default:
 		if isDigit(c) {
 			s.number()
 		} else if isAlpha(c) {
 			s.identifier()
 		} else {
-			return &ScannerError{
-				Line:  s.line,
-				Where: "",
-				Err:   errors.New("Unexpected character."),
-			}
+			ReportError(s.line, "", "unexpected character")
 		}
 	}
-	return nil
 }
 
 func (s *Scanner) advance() byte {
+	c := s.source[s.current]
 	s.current++
-	return s.source[s.current]
+	return c
 }
 
 func (s *Scanner) addToken(tokenType TokenType) {
@@ -185,7 +155,7 @@ func (s *Scanner) peekNext() byte {
 	return s.source[s.current+1]
 }
 
-func (s *Scanner) string() error {
+func (s *Scanner) string() {
 	for s.peek() != '"' && !s.isAtEnd() {
 		if s.peek() == '\n' {
 			s.line++
@@ -194,11 +164,7 @@ func (s *Scanner) string() error {
 	}
 
 	if s.isAtEnd() {
-		return &ScannerError{
-			Line:  s.line,
-			Where: "",
-			Err:   errors.New("Unterminated string."),
-		}
+		ReportError(s.line, "", "unterminated string")
 	}
 
 	// The closing ".
@@ -207,7 +173,6 @@ func (s *Scanner) string() error {
 	// Trim the surrounding quotes.
 	value := s.source[s.start+1 : s.current-1]
 	s.addTokenWithLiteral(STRING, value)
-	return nil
 }
 
 func (s *Scanner) number() {
@@ -234,7 +199,12 @@ func (s *Scanner) identifier() {
 		s.advance()
 	}
 
-	s.addToken(IDENTIFIER)
+	text := s.source[s.start:s.current]
+	tokenType, ok := s.keywords[text]
+	if !ok {
+		tokenType = IDENTIFIER
+	}
+	s.addToken(tokenType)
 }
 
 func isDigit(c byte) bool {
