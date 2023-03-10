@@ -6,16 +6,22 @@ import (
 	"os"
 
 	"github.com/alxbckr/goloxv1/lox"
+	"github.com/alxbckr/goloxv1/printer"
 )
 
 func run(source string) {
 	scan := lox.NewScanner(source)
 	tokens := scan.ScanTokens()
-
-	// For now, just print the tokens.
-	for _, token := range tokens {
-		fmt.Println(token)
+	parser := lox.NewParser(tokens)
+	expr, err := parser.Parse()
+	if err != nil {
+		return
 	}
+	fmt.Println(printer.NewAstPrinter().Print(expr))
+	// // For now, just print the tokens.
+	// for _, token := range tokens {
+	// 	fmt.Println(token)
+	// }
 }
 
 func runPrompt() {

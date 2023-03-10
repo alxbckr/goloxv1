@@ -1,5 +1,7 @@
 package lox
 
+import "fmt"
+
 type Parser struct {
 	tokens  []Token
 	current int
@@ -10,6 +12,17 @@ func NewParser(tokens []Token) *Parser {
 		tokens:  tokens,
 		current: 0,
 	}
+}
+
+func (p *Parser) Parse() (Expr, error) {
+	defer func() {
+		if val := recover(); val != nil {
+			// might trigger another panic if it is not a Parsing Error.
+			parsingError := val.(*LoxError)
+			fmt.Println(parsingError.Error())
+		}
+	}()
+	return p.expression(), nil
 }
 
 func (p *Parser) expression() Expr {
@@ -84,7 +97,7 @@ func (p *Parser) primary() Expr {
 		p.consume(RIGHT_PAREN, "expect ')' after expression.")
 		return NewGrouping(expr)
 	}
-	return nil
+	panic(NewLoxError(p.peek(), "expected expression"))
 }
 
 func (p *Parser) match(tokenTypes ...TokenType) bool {
@@ -128,4 +141,28 @@ func (p *Parser) consume(tokenType TokenType, message string) Token {
 	}
 
 	panic(NewLoxError(p.peek(), message))
+}
+
+func (p *Parser) synchronize() {
+	p.advance()
+
+	for !p.isAtEnd() {
+		if p.previous().TokenType == SEMICOLON {
+			return
+		}
+
+		switch p.peek().TokenType {
+		case CLASS:
+		case FUN:
+		case VAR:
+		case FOR:
+		case IF:
+		case WHILE:
+		case PRINT:
+		case RETURN:
+			return
+		}
+
+		p.advance()
+	}
 }
