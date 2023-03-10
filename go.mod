@@ -1,4 +1,4 @@
-module alxbckr.github.com/goloxv1
+module github.com/alxbckr/goloxv1
 
 go 1.20
 

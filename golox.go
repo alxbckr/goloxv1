@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"alxbckr.github.com/goloxv1/scanner"
+	"github.com/alxbckr/goloxv1/scanner"
 )
 
 func run(source string) {

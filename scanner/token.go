@@ -3,21 +3,21 @@ package scanner
 import "fmt"
 
 type Token struct {
-	tokenType TokenType
-	lexeme    string
-	literal   interface{}
-	line      int
+	TokenType TokenType
+	Lexeme    string
+	Literal   interface{}
+	Line      int
 }
 
 func NewToken(tokenType TokenType, lexeme string, literal interface{}, line int) *Token {
 	return &Token{
-		tokenType: tokenType,
-		lexeme:    lexeme,
-		literal:   literal,
-		line:      line,
+		TokenType: tokenType,
+		Lexeme:    lexeme,
+		Literal:   literal,
+		Line:      line,
 	}
 }
 
 func (t Token) String() string {
-	return t.tokenType.String() + " " + t.lexeme + " " + fmt.Sprintf("%v", t.literal)
+	return t.TokenType.String() + " " + t.Lexeme + " " + fmt.Sprintf("%v", t.Literal)
 }
