@@ -1,6 +1,4 @@
-package parser
-
-import "github.com/alxbckr/goloxv1/scanner"
+package lox
 
 type Visitor interface {
 	VisitBinaryExpr(expr Binary) interface{}
@@ -15,7 +13,7 @@ type Expr interface {
 
 type Binary struct {
 	Left     Expr
-	Operator scanner.Token
+	Operator Token
 	Right    Expr
 }
 
@@ -28,11 +26,11 @@ type Literal struct {
 }
 
 type Unary struct {
-	Operator scanner.Token
+	Operator Token
 	Right    Expr
 }
 
-func NewBinary(left Expr, operator scanner.Token, right Expr) *Binary {
+func NewBinary(left Expr, operator Token, right Expr) *Binary {
 	return &Binary{
 		Left:     left,
 		Operator: operator,
@@ -64,7 +62,7 @@ func (l *Literal) Accept(visitor Visitor) interface{} {
 	return visitor.VisitLiteralExpr(*l)
 }
 
-func NewUnary(operator scanner.Token, right Expr) *Unary {
+func NewUnary(operator Token, right Expr) *Unary {
 	return &Unary{
 		Operator: operator,
 		Right:    right,

@@ -1,4 +1,4 @@
-package scanner
+package lox
 
 //go:generate stringer -type=TokenType token_type.go
 

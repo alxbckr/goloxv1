@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/alxbckr/goloxv1/scanner"
+	"github.com/alxbckr/goloxv1/lox"
 )
 
 func run(source string) {
-	scan := scanner.NewScanner(source)
+	scan := lox.NewScanner(source)
 	tokens := scan.ScanTokens()
 
 	// For now, just print the tokens.
@@ -28,7 +28,7 @@ func runPrompt() {
 			return
 		}
 		run(line)
-		scanner.GetScannerError().Reset()
+		lox.GetScannerError().Reset()
 	}
 }
 
@@ -39,7 +39,7 @@ func runFile(path string) {
 	}
 	run(string(bytes))
 	// Indicate an error in the exit code.
-	if scanner.GetScannerError().GetHadError() {
+	if lox.GetScannerError().GetHadError() {
 		os.Exit(65)
 	}
 }
