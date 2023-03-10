@@ -9,19 +9,22 @@ import (
 	"github.com/alxbckr/goloxv1/printer"
 )
 
-func run(source string) {
+func run(source string) error {
 	scan := lox.NewScanner(source)
-	tokens := scan.ScanTokens()
+
+	tokens, err := scan.ScanTokens()
+	if err != nil {
+		return err
+	}
+
 	parser := lox.NewParser(tokens)
 	expr, err := parser.Parse()
 	if err != nil {
-		return
+		return err
 	}
+
 	fmt.Println(printer.NewAstPrinter().Print(expr))
-	// // For now, just print the tokens.
-	// for _, token := range tokens {
-	// 	fmt.Println(token)
-	// }
+	return nil
 }
 
 func runPrompt() {
@@ -34,7 +37,6 @@ func runPrompt() {
 			return
 		}
 		run(line)
-		lox.GetScannerError().Reset()
 	}
 }
 
@@ -43,9 +45,9 @@ func runFile(path string) {
 	if err != nil {
 		panic(err)
 	}
-	run(string(bytes))
+	err = run(string(bytes))
 	// Indicate an error in the exit code.
-	if lox.GetScannerError().GetHadError() {
+	if err != nil {
 		os.Exit(65)
 	}
 }

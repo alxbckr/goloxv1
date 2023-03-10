@@ -5,6 +5,8 @@ import "fmt"
 type Parser struct {
 	tokens  []Token
 	current int
+
+	hadError bool
 }
 
 func NewParser(tokens []Token) *Parser {
@@ -14,12 +16,14 @@ func NewParser(tokens []Token) *Parser {
 	}
 }
 
-func (p *Parser) Parse() (Expr, error) {
+func (p *Parser) Parse() (expr Expr, err error) {
 	defer func() {
 		if val := recover(); val != nil {
-			// might trigger another panic if it is not a Parsing Error.
 			parsingError := val.(*LoxError)
 			fmt.Println(parsingError.Error())
+			err = parsingError
+			expr = nil
+			p.hadError = true
 		}
 	}()
 	return p.expression(), nil
@@ -70,7 +74,7 @@ func (p *Parser) factor() Expr {
 }
 
 func (p *Parser) unary() Expr {
-	if p.match(SLASH, STAR) {
+	if p.match(BANG, MINUS) {
 		operator := p.previous()
 		right := p.unary()
 		return NewUnary(operator, right)

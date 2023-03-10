@@ -1,6 +1,8 @@
 package lox
 
 import (
+	"errors"
+	"fmt"
 	"strconv"
 )
 
@@ -13,6 +15,8 @@ type Scanner struct {
 	line    int
 
 	keywords map[string]TokenType
+
+	hadError bool
 }
 
 func NewScanner(source string) *Scanner {
@@ -26,14 +30,22 @@ func NewScanner(source string) *Scanner {
 	}
 }
 
-func (s *Scanner) ScanTokens() []Token {
+func (s *Scanner) reportError(line int, where string, error string) {
+	fmt.Printf("[line %v] Error%v: %v", strconv.Itoa(line), where, error)
+	s.hadError = true
+}
+
+func (s *Scanner) ScanTokens() ([]Token, error) {
 	for !s.isAtEnd() {
 		// We are at the beginning of the next lexeme.
 		s.start = s.current
 		s.scanToken()
 	}
 	s.tokens = append(s.tokens, *NewToken(EOF, "", "", s.line))
-	return s.tokens
+	if s.hadError {
+		return nil, errors.New("error in scanner")
+	}
+	return s.tokens, nil
 }
 
 func (s *Scanner) isAtEnd() bool {
@@ -112,7 +124,7 @@ func (s *Scanner) scanToken() {
 		} else if isAlpha(c) {
 			s.identifier()
 		} else {
-			ReportError(s.line, "", "unexpected character")
+			s.reportError(s.line, "", "unexpected character")
 		}
 	}
 }
@@ -166,7 +178,7 @@ func (s *Scanner) string() {
 	}
 
 	if s.isAtEnd() {
-		ReportError(s.line, "", "unterminated string")
+		s.reportError(s.line, "", "unterminated string")
 		return
 	}
 
@@ -190,7 +202,7 @@ func (s *Scanner) multiline_comment() {
 	}
 
 	if s.isAtEnd() {
-		ReportError(s.line, "", "unterminated multiline comment")
+		s.reportError(s.line, "", "unterminated multiline comment")
 	}
 }
 

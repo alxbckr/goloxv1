@@ -2,11 +2,12 @@ package lox
 
 import (
 	"fmt"
-	"strconv"
 )
 
 type ScannerError struct {
-	hadError bool
+	Line  int
+	Where string
+	Error string
 }
 
 type LoxError struct {
@@ -14,23 +15,12 @@ type LoxError struct {
 	Message string
 }
 
-var scannerError ScannerError
-
-func GetScannerError() *ScannerError {
-	return &scannerError
-}
-
-func (s *ScannerError) GetHadError() bool {
-	return s.hadError
-}
-
-func (s *ScannerError) Reset() {
-	s.hadError = false
-}
-
-func ReportError(line int, where string, error string) {
-	fmt.Println("[line " + strconv.Itoa(line) + "] Error" + where + ": " + error)
-	scannerError.hadError = true
+func NewScannerError(line int, where string, error string) *ScannerError {
+	return &ScannerError{
+		Line:  line,
+		Where: where,
+		Error: error,
+	}
 }
 
 func NewLoxError(token Token, message string) *LoxError {
