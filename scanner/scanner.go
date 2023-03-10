@@ -93,6 +93,8 @@ func (s *Scanner) scanToken() {
 			for s.peek() != '\n' && !s.isAtEnd() {
 				s.advance()
 			}
+		} else if s.match('*') {
+			s.multiline_comment()
 		} else {
 			s.addToken(SLASH)
 		}
@@ -165,6 +167,7 @@ func (s *Scanner) string() {
 
 	if s.isAtEnd() {
 		ReportError(s.line, "", "unterminated string")
+		return
 	}
 
 	// The closing ".
@@ -173,6 +176,22 @@ func (s *Scanner) string() {
 	// Trim the surrounding quotes.
 	value := s.source[s.start+1 : s.current-1]
 	s.addTokenWithLiteral(STRING, value)
+}
+
+func (s *Scanner) multiline_comment() {
+	for !s.isAtEnd() {
+		c := s.advance()
+		if c == '\n' {
+			s.line++
+		}
+		if c == '*' && s.match('/') {
+			break
+		}
+	}
+
+	if s.isAtEnd() {
+		ReportError(s.line, "", "unterminated multiline comment")
+	}
 }
 
 func (s *Scanner) number() {

@@ -1,2 +1,5 @@
 // very first program
 var language = "lox";
+/* multiline comment
+   that should be skipped */
+a + b = 10;   
