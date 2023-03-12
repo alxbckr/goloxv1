@@ -6,8 +6,9 @@ import (
 	"os"
 
 	"github.com/alxbckr/goloxv1/lox"
-	"github.com/alxbckr/goloxv1/printer"
 )
+
+var interpreter *lox.Interpreter
 
 func run(source string) error {
 	scan := lox.NewScanner(source)
@@ -23,7 +24,7 @@ func run(source string) error {
 		return err
 	}
 
-	fmt.Println(printer.NewAstPrinter().Print(expr))
+	err = interpreter.Interpret(expr)
 	return nil
 }
 
@@ -53,6 +54,7 @@ func runFile(path string) {
 }
 
 func main() {
+	interpreter = lox.NewInterpreter()
 	args := os.Args
 	if len(args) > 2 {
 		fmt.Printf("Usage: golox [script]")

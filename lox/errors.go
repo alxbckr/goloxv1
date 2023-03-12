@@ -15,6 +15,11 @@ type LoxError struct {
 	Message string
 }
 
+type RuntimeError struct {
+	Token   Token
+	Message string
+}
+
 func NewScannerError(line int, where string, error string) *ScannerError {
 	return &ScannerError{
 		Line:  line,
@@ -30,6 +35,13 @@ func NewLoxError(token Token, message string) *LoxError {
 	}
 }
 
+func NewRuntimeError(token Token, message string) *RuntimeError {
+	return &RuntimeError{
+		Token:   token,
+		Message: message,
+	}
+}
+
 func (err *LoxError) Error() string {
 	line := err.Token.Line
 	where := err.Token.Lexeme
@@ -39,4 +51,10 @@ func (err *LoxError) Error() string {
 		where = "end"
 	}
 	return fmt.Sprintf("[line %v] Error at %v: %v\n", line, where, message)
+}
+
+func (err *RuntimeError) Error() string {
+	line := err.Token.Line
+	message := err.Message
+	return fmt.Sprintf("%v [line %v]", message, line)
 }
