@@ -19,12 +19,15 @@ func run(source string) error {
 	}
 
 	parser := lox.NewParser(tokens)
-	expr, err := parser.Parse()
+	statements, err := parser.Parse()
 	if err != nil {
 		return err
 	}
 
-	err = interpreter.Interpret(expr)
+	err = interpreter.Interpret(statements)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

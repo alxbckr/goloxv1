@@ -1,14 +1,15 @@
 package lox
 
-type Visitor interface {
+type ExpressionVisitor interface {
 	VisitBinaryExpr(expr Binary) interface{}
 	VisitGroupingExpr(expr Grouping) interface{}
 	VisitLiteralExpr(expr Literal) interface{}
 	VisitUnaryExpr(expr Unary) interface{}
+	VisitVariableExpr(expr Variable) interface{}
 }
 
 type Expr interface {
-	Accept(visitor Visitor) interface{}
+	Accept(visitor ExpressionVisitor) interface{}
 }
 
 type Binary struct {
@@ -30,6 +31,10 @@ type Unary struct {
 	Right    Expr
 }
 
+type Variable struct {
+	Name Token
+}
+
 func NewBinary(left Expr, operator Token, right Expr) *Binary {
 	return &Binary{
 		Left:     left,
@@ -38,7 +43,7 @@ func NewBinary(left Expr, operator Token, right Expr) *Binary {
 	}
 }
 
-func (b *Binary) Accept(visitor Visitor) interface{} {
+func (b *Binary) Accept(visitor ExpressionVisitor) interface{} {
 	return visitor.VisitBinaryExpr(*b)
 }
 
@@ -48,7 +53,7 @@ func NewGrouping(expr Expr) *Grouping {
 	}
 }
 
-func (g *Grouping) Accept(visitor Visitor) interface{} {
+func (g *Grouping) Accept(visitor ExpressionVisitor) interface{} {
 	return visitor.VisitGroupingExpr(*g)
 }
 
@@ -58,7 +63,7 @@ func NewLiteral(value interface{}) *Literal {
 	}
 }
 
-func (l *Literal) Accept(visitor Visitor) interface{} {
+func (l *Literal) Accept(visitor ExpressionVisitor) interface{} {
 	return visitor.VisitLiteralExpr(*l)
 }
 
@@ -69,6 +74,16 @@ func NewUnary(operator Token, right Expr) *Unary {
 	}
 }
 
-func (u *Unary) Accept(visitor Visitor) interface{} {
+func (u *Unary) Accept(visitor ExpressionVisitor) interface{} {
 	return visitor.VisitUnaryExpr(*u)
+}
+
+func NewVariable(name Token) *Variable {
+	return &Variable{
+		Name: name,
+	}
+}
+
+func (v *Variable) Accept(visitor ExpressionVisitor) interface{} {
+	return visitor.VisitVariableExpr(*v)
 }

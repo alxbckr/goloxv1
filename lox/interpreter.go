@@ -7,15 +7,17 @@ import (
 
 type Interpreter struct {
 	hadRuntimeError bool
+	environment     Environment
 }
 
 func NewInterpreter() *Interpreter {
 	return &Interpreter{
 		hadRuntimeError: false,
+		environment:     *NewEnvironment(),
 	}
 }
 
-func (i *Interpreter) Interpret(expression Expr) (err error) {
+func (i *Interpreter) Interpret(statements []Stmt) (err error) {
 	defer func() {
 		if val := recover(); val != nil {
 			runtimeError := val.(*RuntimeError)
@@ -24,9 +26,27 @@ func (i *Interpreter) Interpret(expression Expr) (err error) {
 			i.hadRuntimeError = true
 		}
 	}()
-	value := i.evaluate(expression)
-	fmt.Println(stringify(value))
+	for _, s := range statements {
+		i.execute(s)
+	}
 	return nil
+}
+
+func (i *Interpreter) VisitExpressionStmt(stmt Expression) {
+	i.evaluate(stmt.Expression)
+}
+
+func (i *Interpreter) VisitPrintStmt(stmt Print) {
+	value := i.evaluate(stmt.Expression)
+	fmt.Println(stringify(value))
+}
+
+func (i *Interpreter) VisitVarStmt(stmt Var) {
+	var value interface{} = nil
+	if stmt.Initializer != nil {
+		value = i.evaluate(stmt.Initializer)
+	}
+	i.environment.Define(stmt.Name.Lexeme, value)
 }
 
 func (i *Interpreter) VisitLiteralExpr(expr Literal) interface{} {
@@ -94,8 +114,16 @@ func (i *Interpreter) VisitBinaryExpr(expr Binary) interface{} {
 	return nil
 }
 
+func (i *Interpreter) VisitVariableExpr(expr Variable) interface{} {
+	return i.environment.Get(expr.Name)
+}
+
 func (i *Interpreter) evaluate(expr Expr) interface{} {
 	return expr.Accept(i)
+}
+
+func (i *Interpreter) execute(stmt Stmt) {
+	stmt.Accept(i)
 }
 
 func isTruthy(value interface{}) bool {

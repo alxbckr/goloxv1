@@ -16,17 +16,58 @@ func NewParser(tokens []Token) *Parser {
 	}
 }
 
-func (p *Parser) Parse() (expr Expr, err error) {
+func (p *Parser) Parse() ([]Stmt, error) {
+	var statements []Stmt
+	for !p.isAtEnd() {
+		statements = append(statements, p.declaration())
+	}
+	return statements, nil
+}
+
+func (p *Parser) declaration() Stmt {
 	defer func() {
 		if val := recover(); val != nil {
 			parsingError := val.(*LoxError)
 			fmt.Println(parsingError.Error())
-			err = parsingError
-			expr = nil
+			p.synchronize()
 			p.hadError = true
 		}
 	}()
-	return p.expression(), nil
+	if p.match(VAR) {
+		return p.varDeclaration()
+	}
+	return p.statement()
+}
+
+func (p *Parser) varDeclaration() Stmt {
+	name := p.consume(IDENTIFIER, "expect variable name.")
+
+	var initializer Expr
+	if p.match(EQUAL) {
+		initializer = p.expression()
+	}
+
+	p.consume(SEMICOLON, "expect ';' after variable declaration.")
+	return NewVar(name, initializer)
+}
+
+func (p *Parser) statement() Stmt {
+	if p.match(PRINT) {
+		return p.printStatement()
+	}
+	return p.expressionStatement()
+}
+
+func (p *Parser) printStatement() Stmt {
+	value := p.expression()
+	p.consume(SEMICOLON, "expect ';' after value.")
+	return NewPrint(value)
+}
+
+func (p *Parser) expressionStatement() Stmt {
+	expr := p.expression()
+	p.consume(SEMICOLON, "expect ';' after expression.")
+	return NewExpression(expr)
 }
 
 func (p *Parser) expression() Expr {
@@ -94,6 +135,9 @@ func (p *Parser) primary() Expr {
 	}
 	if p.match(NUMBER, STRING) {
 		return NewLiteral(p.previous().Literal)
+	}
+	if p.match(IDENTIFIER) {
+		return NewVariable(p.previous())
 	}
 
 	if p.match(LEFT_PAREN) {
