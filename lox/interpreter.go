@@ -49,6 +49,12 @@ func (i *Interpreter) VisitVarStmt(stmt Var) {
 	i.environment.Define(stmt.Name.Lexeme, value)
 }
 
+func (i *Interpreter) VisitAssignExpr(expr Assign) interface{} {
+	value := i.evaluate(expr.Value)
+	i.environment.Assign(expr.Name, value)
+	return value
+}
+
 func (i *Interpreter) VisitLiteralExpr(expr Literal) interface{} {
 	return expr.Value
 }
