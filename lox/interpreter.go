@@ -7,13 +7,13 @@ import (
 
 type Interpreter struct {
 	hadRuntimeError bool
-	environment     Environment
+	environment     *Environment
 }
 
 func NewInterpreter() *Interpreter {
 	return &Interpreter{
 		hadRuntimeError: false,
-		environment:     *NewEnvironment(),
+		environment:     NewEnvironment(),
 	}
 }
 
@@ -130,6 +130,23 @@ func (i *Interpreter) evaluate(expr Expr) interface{} {
 
 func (i *Interpreter) execute(stmt Stmt) {
 	stmt.Accept(i)
+}
+
+func (i *Interpreter) VisitBlockStmt(stmt Block) {
+	i.executeBlock(stmt.Statements, NewEnvironmentWithEnclosing(i.environment))
+}
+
+func (i *Interpreter) executeBlock(stmt []Stmt, environment *Environment) {
+	previous := i.environment
+
+	defer func() {
+		i.environment = previous
+	}()
+
+	i.environment = environment
+	for _, s := range stmt {
+		i.execute(s)
+	}
 }
 
 func isTruthy(value interface{}) bool {
