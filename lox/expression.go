@@ -4,6 +4,7 @@ type ExpressionVisitor interface {
 	VisitBinaryExpr(expr Binary) interface{}
 	VisitGroupingExpr(expr Grouping) interface{}
 	VisitLiteralExpr(expr Literal) interface{}
+	VisitLogicalExpr(expr Logical) interface{}
 	VisitUnaryExpr(expr Unary) interface{}
 	VisitVariableExpr(expr Variable) interface{}
 	VisitAssignExpr(expr Assign) interface{}
@@ -25,6 +26,12 @@ type Grouping struct {
 
 type Literal struct {
 	Value interface{}
+}
+
+type Logical struct {
+	Left     Expr
+	Operator Token
+	Right    Expr
 }
 
 type Unary struct {
@@ -71,6 +78,18 @@ func NewLiteral(value interface{}) *Literal {
 
 func (l *Literal) Accept(visitor ExpressionVisitor) interface{} {
 	return visitor.VisitLiteralExpr(*l)
+}
+
+func NewLogical(left Expr, operator Token, right Expr) *Logical {
+	return &Logical{
+		Left:     left,
+		Operator: operator,
+		Right:    right,
+	}
+}
+
+func (l *Logical) Accept(visitor ExpressionVisitor) interface{} {
+	return visitor.VisitLogicalExpr(*l)
 }
 
 func NewUnary(operator Token, right Expr) *Unary {

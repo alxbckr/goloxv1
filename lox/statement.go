@@ -5,10 +5,17 @@ type StatementVisitor interface {
 	VisitExpressionStmt(stmt Expression)
 	VisitVarStmt(stmt Var)
 	VisitBlockStmt(stmt Block)
+	VisitIfStmt(stmt If)
 }
 
 type Stmt interface {
 	Accept(visitor StatementVisitor)
+}
+
+type If struct {
+	Condition  Expr
+	ThenBranch Stmt
+	ElseBranch Stmt
 }
 
 type Block struct {
@@ -26,6 +33,14 @@ type Print struct {
 type Var struct {
 	Name        Token
 	Initializer Expr
+}
+
+func NewIf(condition Expr, thenBranch Stmt, elseBranch Stmt) *If {
+	return &If{
+		Condition:  condition,
+		ThenBranch: thenBranch,
+		ElseBranch: elseBranch,
+	}
 }
 
 func NewBlock(statements []Stmt) *Block {
@@ -51,6 +66,10 @@ func NewVar(name Token, iniitializer Expr) *Var {
 		Name:        name,
 		Initializer: iniitializer,
 	}
+}
+
+func (i *If) Accept(visitor StatementVisitor) {
+	visitor.VisitIfStmt(*i)
 }
 
 func (b *Block) Accept(visitor StatementVisitor) {
