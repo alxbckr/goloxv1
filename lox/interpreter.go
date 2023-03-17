@@ -49,6 +49,12 @@ func (i *Interpreter) VisitVarStmt(stmt Var) {
 	i.environment.Define(stmt.Name.Lexeme, value)
 }
 
+func (i *Interpreter) VisitWhileStmt(stmt While) {
+	for isTruthy(i.evaluate(stmt.Condition)) {
+		i.execute(stmt.Body)
+	}
+}
+
 func (i *Interpreter) VisitAssignExpr(expr Assign) interface{} {
 	value := i.evaluate(expr.Value)
 	i.environment.Assign(expr.Name, value)

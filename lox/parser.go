@@ -52,6 +52,10 @@ func (p *Parser) varDeclaration() Stmt {
 }
 
 func (p *Parser) statement() Stmt {
+	if p.match(FOR) {
+		return p.forStatement()
+	}
+
 	if p.match(IF) {
 		return p.ifStatement()
 	}
@@ -60,10 +64,56 @@ func (p *Parser) statement() Stmt {
 		return p.printStatement()
 	}
 
+	if p.match(WHILE) {
+		return p.whileStatement()
+	}
+
 	if p.match(LEFT_BRACE) {
-		return NewBlock(p.block())
+		return NewBlock(p.blockStatement())
 	}
 	return p.expressionStatement()
+}
+
+func (p *Parser) forStatement() Stmt {
+	p.consume(LEFT_PAREN, "expect '(' after 'for'.")
+
+	var initializer Stmt = nil
+	if p.match(SEMICOLON) {
+		initializer = nil
+	} else if p.match(VAR) {
+		initializer = p.varDeclaration()
+	} else {
+		initializer = p.expressionStatement()
+	}
+
+	var condition Expr = nil
+	if !p.check(SEMICOLON) {
+		condition = p.expression()
+	}
+	p.consume(SEMICOLON, "expect ';' after loop condition.")
+
+	var increment Expr = nil
+	if !p.check(RIGHT_PAREN) {
+		increment = p.expression()
+	}
+	p.consume(RIGHT_PAREN, "expect ')' after for clauses.")
+
+	body := p.statement()
+
+	if increment != nil {
+		body = NewBlock([]Stmt{body, NewExpression(increment)})
+	}
+
+	if condition == nil {
+		condition = NewLiteral(true)
+	}
+	body = NewWhile(condition, body)
+
+	if initializer != nil {
+		body = NewBlock([]Stmt{initializer, body})
+	}
+
+	return body
 }
 
 func (p *Parser) ifStatement() Stmt {
@@ -80,7 +130,15 @@ func (p *Parser) ifStatement() Stmt {
 	return NewIf(condition, thenBranch, elseBranch)
 }
 
-func (p *Parser) block() []Stmt {
+func (p *Parser) whileStatement() Stmt {
+	p.consume(LEFT_PAREN, "expect '(' after while.")
+	condition := p.expression()
+	p.consume(RIGHT_PAREN, "expect ')' after condition.")
+	body := p.statement()
+	return NewWhile(condition, body)
+}
+
+func (p *Parser) blockStatement() []Stmt {
 	var statements []Stmt
 	for !p.check(RIGHT_BRACE) && !p.isAtEnd() {
 		statements = append(statements, p.declaration())

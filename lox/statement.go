@@ -6,6 +6,7 @@ type StatementVisitor interface {
 	VisitVarStmt(stmt Var)
 	VisitBlockStmt(stmt Block)
 	VisitIfStmt(stmt If)
+	VisitWhileStmt(stmt While)
 }
 
 type Stmt interface {
@@ -33,6 +34,11 @@ type Print struct {
 type Var struct {
 	Name        Token
 	Initializer Expr
+}
+
+type While struct {
+	Condition Expr
+	Body      Stmt
 }
 
 func NewIf(condition Expr, thenBranch Stmt, elseBranch Stmt) *If {
@@ -68,6 +74,13 @@ func NewVar(name Token, iniitializer Expr) *Var {
 	}
 }
 
+func NewWhile(condition Expr, body Stmt) *While {
+	return &While{
+		Condition: condition,
+		Body:      body,
+	}
+}
+
 func (i *If) Accept(visitor StatementVisitor) {
 	visitor.VisitIfStmt(*i)
 }
@@ -86,4 +99,8 @@ func (p *Print) Accept(visitor StatementVisitor) {
 
 func (v *Var) Accept(visitor StatementVisitor) {
 	visitor.VisitVarStmt(*v)
+}
+
+func (w *While) Accept(visitor StatementVisitor) {
+	visitor.VisitWhileStmt(*w)
 }
