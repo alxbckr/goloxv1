@@ -2,6 +2,7 @@ package lox
 
 type ExpressionVisitor interface {
 	VisitBinaryExpr(expr Binary) interface{}
+	VisitCallExpr(expr Call) interface{}
 	VisitGroupingExpr(expr Grouping) interface{}
 	VisitLiteralExpr(expr Literal) interface{}
 	VisitLogicalExpr(expr Logical) interface{}
@@ -18,6 +19,12 @@ type Binary struct {
 	Left     Expr
 	Operator Token
 	Right    Expr
+}
+
+type Call struct {
+	Callee    Expr
+	Paren     Token
+	Arguments []Expr
 }
 
 type Grouping struct {
@@ -58,6 +65,18 @@ func NewBinary(left Expr, operator Token, right Expr) *Binary {
 
 func (b *Binary) Accept(visitor ExpressionVisitor) interface{} {
 	return visitor.VisitBinaryExpr(*b)
+}
+
+func NewCall(callee Expr, paren Token, arguments []Expr) *Call {
+	return &Call{
+		Callee:    callee,
+		Paren:     paren,
+		Arguments: arguments,
+	}
+}
+
+func (c *Call) Accept(visitor ExpressionVisitor) interface{} {
+	return visitor.VisitCallExpr(*c)
 }
 
 func NewGrouping(expr Expr) *Grouping {

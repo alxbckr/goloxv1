@@ -3,17 +3,26 @@ package lox
 import (
 	"fmt"
 	"reflect"
+	"time"
 )
 
 type Interpreter struct {
 	hadRuntimeError bool
+	globals         *Environment
 	environment     *Environment
 }
 
 func NewInterpreter() *Interpreter {
+	env := NewEnvironment()
+
+	env.Define("clock", NewProtoCallable(0, func(interpreter *Interpreter, arguments []interface{}) interface{} {
+		return time.Now().UnixMilli() / 1000.0
+	}))
+
 	return &Interpreter{
 		hadRuntimeError: false,
-		environment:     NewEnvironment(),
+		globals:         env,
+		environment:     env,
 	}
 }
 
@@ -145,6 +154,26 @@ func (i *Interpreter) VisitBinaryExpr(expr Binary) interface{} {
 	}
 	// unreachable
 	return nil
+}
+
+func (i *Interpreter) VisitCallExpr(expr Call) interface{} {
+	callee := i.evaluate(expr.Callee)
+
+	var arguments []interface{}
+	for _, a := range expr.Arguments {
+		arguments = append(arguments, i.evaluate(a))
+	}
+
+	f, ok := callee.(Callable)
+	if !ok {
+		panic(NewRuntimeError(expr.Paren, "can only call functions and classes"))
+	}
+
+	if len(arguments) != f.Arity() {
+		panic(NewRuntimeError(expr.Paren, fmt.Sprintf("expected %v arguments but got %v.", f.Arity(), len(arguments))))
+	}
+
+	return f.Call(i, arguments)
 }
 
 func (i *Interpreter) VisitVariableExpr(expr Variable) interface{} {
