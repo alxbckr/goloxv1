@@ -7,6 +7,8 @@ type StatementVisitor interface {
 	VisitBlockStmt(stmt Block)
 	VisitIfStmt(stmt If)
 	VisitWhileStmt(stmt While)
+	VisitFunctionStmt(stmt Function)
+	VisitReturnStmt(stmt Return)
 }
 
 type Stmt interface {
@@ -39,6 +41,17 @@ type Var struct {
 type While struct {
 	Condition Expr
 	Body      Stmt
+}
+
+type Function struct {
+	Name   Token
+	Params []Token
+	Body   []Stmt
+}
+
+type Return struct {
+	Keyword Token
+	Value   Expr
 }
 
 func NewIf(condition Expr, thenBranch Stmt, elseBranch Stmt) *If {
@@ -81,6 +94,21 @@ func NewWhile(condition Expr, body Stmt) *While {
 	}
 }
 
+func NewFunction(name Token, params []Token, body []Stmt) *Function {
+	return &Function{
+		Name:   name,
+		Params: params,
+		Body:   body,
+	}
+}
+
+func NewReturn(keyword Token, value Expr) *Return {
+	return &Return{
+		Keyword: keyword,
+		Value:   value,
+	}
+}
+
 func (i *If) Accept(visitor StatementVisitor) {
 	visitor.VisitIfStmt(*i)
 }
@@ -103,4 +131,12 @@ func (v *Var) Accept(visitor StatementVisitor) {
 
 func (w *While) Accept(visitor StatementVisitor) {
 	visitor.VisitWhileStmt(*w)
+}
+
+func (f *Function) Accept(visitor StatementVisitor) {
+	visitor.VisitFunctionStmt(*f)
+}
+
+func (r *Return) Accept(visitor StatementVisitor) {
+	visitor.VisitReturnStmt(*r)
 }

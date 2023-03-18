@@ -33,10 +33,38 @@ func (p *Parser) declaration() Stmt {
 			p.hadError = true
 		}
 	}()
+
+	if p.match(FUN) {
+		return p.function("function")
+	}
+
 	if p.match(VAR) {
 		return p.varDeclaration()
 	}
+
 	return p.statement()
+}
+
+func (p *Parser) function(kind string) Stmt {
+	name := p.consume(IDENTIFIER, fmt.Sprintf("expect %v name.", kind))
+	p.consume(LEFT_PAREN, fmt.Sprintf("expect '(' after %v name.", kind))
+	var parameters []Token
+	if !p.check(RIGHT_PAREN) {
+		for {
+			if len(parameters) >= 255 {
+				p.reportError(p.peek(), "can't have more than 255 parameters.")
+			}
+			parameters = append(parameters, p.consume(IDENTIFIER, "expect parameter name."))
+			if !p.match(COMMA) {
+				break
+			}
+		}
+	}
+	p.consume(RIGHT_PAREN, "expect ')' after parameters.")
+
+	p.consume(LEFT_BRACE, fmt.Sprintf("expect '{' before %v body.", kind))
+	body := p.blockStatement()
+	return NewFunction(name, parameters, body)
 }
 
 func (p *Parser) varDeclaration() Stmt {
@@ -62,6 +90,10 @@ func (p *Parser) statement() Stmt {
 
 	if p.match(PRINT) {
 		return p.printStatement()
+	}
+
+	if p.match(RETURN) {
+		return p.returnStatement()
 	}
 
 	if p.match(WHILE) {
@@ -151,6 +183,16 @@ func (p *Parser) printStatement() Stmt {
 	value := p.expression()
 	p.consume(SEMICOLON, "expect ';' after value.")
 	return NewPrint(value)
+}
+
+func (p *Parser) returnStatement() Stmt {
+	keyword := p.previous()
+	var value Expr
+	if !p.check(SEMICOLON) {
+		value = p.expression()
+	}
+	p.consume(SEMICOLON, "expect ';' after return value.")
+	return NewReturn(keyword, value)
 }
 
 func (p *Parser) expressionStatement() Stmt {
@@ -254,6 +296,9 @@ func (p *Parser) finishCall(callee Expr) Expr {
 	var arguments []Expr
 	if !p.check(RIGHT_PAREN) {
 		for {
+			if len(arguments) >= 255 {
+				p.reportError(p.peek(), "can't have more than 255 arguments")
+			}
 			arguments = append(arguments, p.expression())
 			if !p.match(COMMA) {
 				break

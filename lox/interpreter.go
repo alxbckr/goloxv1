@@ -45,9 +45,22 @@ func (i *Interpreter) VisitExpressionStmt(stmt Expression) {
 	i.evaluate(stmt.Expression)
 }
 
+func (i *Interpreter) VisitFunctionStmt(stmt Function) {
+	function := NewLoxFunction(stmt)
+	i.environment.Define(stmt.Name.Lexeme, function)
+}
+
 func (i *Interpreter) VisitPrintStmt(stmt Print) {
 	value := i.evaluate(stmt.Expression)
 	fmt.Println(stringify(value))
+}
+
+func (i *Interpreter) VisitReturnStmt(stmt Return) {
+	var value interface{}
+	if stmt.Value != nil {
+		value = i.evaluate(stmt.Value)
+	}
+	panic(NewReturnWrapper(value))
 }
 
 func (i *Interpreter) VisitVarStmt(stmt Var) {
