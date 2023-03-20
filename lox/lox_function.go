@@ -4,23 +4,27 @@ import "fmt"
 
 type LoxFunction struct {
 	Declaration Function
+	Closure     *Environment
 }
 
-func NewLoxFunction(declaration Function) *LoxFunction {
+func NewLoxFunction(declaration Function, closure *Environment) *LoxFunction {
 	return &LoxFunction{
 		Declaration: declaration,
+		Closure:     closure,
 	}
 }
 
 func (f *LoxFunction) Call(interpreter *Interpreter, arguments []interface{}) (retVal interface{}) {
-	environment := NewEnvironmentWithEnclosing(interpreter.globals)
+	environment := NewEnvironmentWithEnclosing(f.Closure)
 	for i, param := range f.Declaration.Params {
 		environment.Define(param.Lexeme, arguments[i])
 	}
 
 	defer func() {
 		val := recover()
-		retVal = val.(*ReturnWrapper).Value
+		if val != nil {
+			retVal = val.(*ReturnWrapper).Value
+		}
 	}()
 
 	interpreter.executeBlock(f.Declaration.Body, environment)

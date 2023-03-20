@@ -46,7 +46,7 @@ func (i *Interpreter) VisitExpressionStmt(stmt Expression) {
 }
 
 func (i *Interpreter) VisitFunctionStmt(stmt Function) {
-	function := NewLoxFunction(stmt)
+	function := NewLoxFunction(stmt, i.environment)
 	i.environment.Define(stmt.Name.Lexeme, function)
 }
 
