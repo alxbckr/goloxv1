@@ -24,6 +24,12 @@ func run(source string) error {
 		return err
 	}
 
+	resolver := lox.NewResolver(interpreter)
+	err = resolver.ResolveStatements(statements)
+	if err != nil {
+		return err
+	}
+
 	err = interpreter.Interpret(statements)
 	if err != nil {
 		return err

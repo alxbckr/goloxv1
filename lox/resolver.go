@@ -1,22 +1,37 @@
 package lox
 
-import lls "github.com/emirpasic/gods/stacks/linkedliststack"
+import (
+	"fmt"
+
+	lls "github.com/emirpasic/gods/stacks/linkedliststack"
+)
+
+type FunctionType int
+
+const (
+	NONE FunctionType = iota
+	FUNCTION
+)
 
 type Resolver struct {
-	interpreter Interpreter
-	scopes      lls.Stack
+	interpreter     *Interpreter
+	scopes          lls.Stack
+	currentFunction FunctionType
+	hadRuntimeError bool
 }
 
-func NewResolver(interpreter Interpreter) *Resolver {
+func NewResolver(interpreter *Interpreter) *Resolver {
 	return &Resolver{
-		interpreter: interpreter,
-		scopes:      *lls.New(),
+		interpreter:     interpreter,
+		scopes:          *lls.New(),
+		currentFunction: NONE,
+		hadRuntimeError: false,
 	}
 }
 
 func (r *Resolver) VisitBlockStmt(stmt Block) {
 	r.beginScope()
-	r.resolveStatements(stmt.Statements)
+	r.ResolveStatements(stmt.Statements)
 	r.endScope()
 }
 
@@ -35,7 +50,7 @@ func (r *Resolver) VisitVarStmt(stmt Var) {
 func (r *Resolver) VisitFunctionStmt(stmt Function) {
 	r.declare(stmt.Name)
 	r.define(stmt.Name)
-	r.resolveFunction(stmt)
+	r.resolveFunction(stmt, FUNCTION)
 }
 
 func (r *Resolver) VisitIfStmt(stmt If) {
@@ -51,6 +66,10 @@ func (r *Resolver) VisitPrintStmt(stmt Print) {
 }
 
 func (r *Resolver) VisitReturnStmt(stmt Return) {
+	if r.currentFunction == NONE {
+		panic(NewLoxError(stmt.Keyword, "can't return from top-level code."))
+	}
+
 	if stmt.Value != nil {
 		r.resolveExpression(stmt.Value)
 	}
@@ -67,10 +86,44 @@ func (r *Resolver) VisitAssignExpr(expr Assign) interface{} {
 	return nil
 }
 
+func (r *Resolver) VisitBinaryExpr(expr Binary) interface{} {
+	r.resolveExpression(expr.Left)
+	r.resolveExpression(expr.Right)
+	return nil
+}
+
+func (r *Resolver) VisitCallExpr(expr Call) interface{} {
+	r.resolveExpression(expr.Callee)
+	for _, arg := range expr.Arguments {
+		r.resolveExpression(arg)
+	}
+	return nil
+}
+
+func (r *Resolver) VisitGroupingExpr(expr Grouping) interface{} {
+	r.resolveExpression(expr.Expression)
+	return nil
+}
+
+func (r *Resolver) VisitLiteralExpr(expr Literal) interface{} {
+	return nil
+}
+
+func (r *Resolver) VisitLogicalExpr(expr Logical) interface{} {
+	r.resolveExpression(expr.Left)
+	r.resolveExpression(expr.Right)
+	return nil
+}
+
+func (r *Resolver) VisitUnaryExpr(expr Unary) interface{} {
+	r.resolveExpression(expr.Right)
+	return nil
+}
+
 func (r *Resolver) VisitVariableExpr(expr Variable) interface{} {
 	if !r.scopes.Empty() {
 		scope, _ := r.scopes.Peek()
-		if (scope.(map[string]bool))[expr.Name.Lexeme] == false {
+		if !(scope.(map[string]bool))[expr.Name.Lexeme] {
 			panic(NewLoxError(expr.Name, "can't read local variabl in its own initializer."))
 		}
 	}
@@ -79,10 +132,20 @@ func (r *Resolver) VisitVariableExpr(expr Variable) interface{} {
 	return nil
 }
 
-func (r *Resolver) resolveStatements(statements []Stmt) {
+func (r *Resolver) ResolveStatements(statements []Stmt) (err error) {
+	defer func() {
+		if val := recover(); val != nil {
+			loxError := val.(*LoxError)
+			fmt.Println(loxError.Error())
+			err = loxError
+			r.hadRuntimeError = true
+		}
+	}()
+
 	for _, s := range statements {
 		r.resolveStatement(s)
 	}
+	return nil
 }
 
 func (r *Resolver) resolveStatement(stmt Stmt) {
@@ -107,6 +170,11 @@ func (r *Resolver) declare(name Token) {
 	}
 
 	scope, _ := r.scopes.Peek()
+
+	if _, ok := scope.(map[string]bool)[name.Lexeme]; ok {
+		panic(NewLoxError(name, "already a variable with this name in this scope."))
+	}
+
 	(scope.(map[string]bool))[name.Lexeme] = false
 }
 
@@ -123,18 +191,23 @@ func (r *Resolver) resolveLocal(expr Expr, name Token) {
 	scopeDeep := 0
 	for iter.Next() {
 		if _, ok := (iter.Value().(map[string]bool))[name.Lexeme]; ok {
-			r.interpreter.resolve(expr, scopeDeep)
+			r.interpreter.Resolve(expr, scopeDeep)
 		}
 		scopeDeep++
 	}
 }
 
-func (r *Resolver) resolveFunction(function Function) {
+func (r *Resolver) resolveFunction(function Function, typeF FunctionType) {
+	enclosingFunction := r.currentFunction
+	r.currentFunction = typeF
+
 	r.beginScope()
 	for _, param := range function.Params {
 		r.declare(param)
 		r.define(param)
 	}
-	r.resolveStatements(function.Body)
+	r.ResolveStatements(function.Body)
 	r.endScope()
+
+	r.currentFunction = enclosingFunction
 }

@@ -10,6 +10,7 @@ type Interpreter struct {
 	hadRuntimeError bool
 	globals         *Environment
 	environment     *Environment
+	locals          map[Expr]int
 }
 
 func NewInterpreter() *Interpreter {
@@ -23,6 +24,7 @@ func NewInterpreter() *Interpreter {
 		hadRuntimeError: false,
 		globals:         env,
 		environment:     env,
+		locals:          make(map[Expr]int),
 	}
 }
 
@@ -79,7 +81,13 @@ func (i *Interpreter) VisitWhileStmt(stmt While) {
 
 func (i *Interpreter) VisitAssignExpr(expr Assign) interface{} {
 	value := i.evaluate(expr.Value)
-	i.environment.Assign(expr.Name, value)
+
+	distance, ok := i.locals[&expr]
+	if ok {
+		i.environment.AssignAt(distance, expr.Name, value)
+	} else {
+		i.globals.Assign(expr.Name, value)
+	}
 	return value
 }
 
@@ -190,7 +198,16 @@ func (i *Interpreter) VisitCallExpr(expr Call) interface{} {
 }
 
 func (i *Interpreter) VisitVariableExpr(expr Variable) interface{} {
-	return i.environment.Get(expr.Name)
+	return i.lookUpVariable(expr.Name, &expr)
+}
+
+func (i *Interpreter) lookUpVariable(name Token, expr Expr) interface{} {
+	distance, ok := i.locals[expr]
+	if ok {
+		return i.environment.GetAt(distance, name.Lexeme)
+	} else {
+		return i.globals.Get(name)
+	}
 }
 
 func (i *Interpreter) evaluate(expr Expr) interface{} {
@@ -199,6 +216,10 @@ func (i *Interpreter) evaluate(expr Expr) interface{} {
 
 func (i *Interpreter) execute(stmt Stmt) {
 	stmt.Accept(i)
+}
+
+func (i *Interpreter) Resolve(expr Expr, depth int) {
+	i.locals[expr] = depth
 }
 
 func (i *Interpreter) VisitBlockStmt(stmt Block) {
