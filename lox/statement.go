@@ -9,6 +9,7 @@ type StatementVisitor interface {
 	VisitWhileStmt(stmt While)
 	VisitFunctionStmt(stmt Function)
 	VisitReturnStmt(stmt Return)
+	VisitClassStmt(stmt Class)
 }
 
 type Stmt interface {
@@ -52,6 +53,12 @@ type Function struct {
 type Return struct {
 	Keyword Token
 	Value   Expr
+}
+
+type Class struct {
+	Name       Token
+	Superclass Variable
+	Methods    []Function
 }
 
 func NewIf(condition Expr, thenBranch Stmt, elseBranch Stmt) *If {
@@ -109,6 +116,14 @@ func NewReturn(keyword Token, value Expr) *Return {
 	}
 }
 
+func NewClass(name Token, superclass Variable, methods []Function) *Class {
+	return &Class{
+		Name:       name,
+		Superclass: superclass,
+		Methods:    methods,
+	}
+}
+
 func (i *If) Accept(visitor StatementVisitor) {
 	visitor.VisitIfStmt(*i)
 }
@@ -139,4 +154,8 @@ func (f *Function) Accept(visitor StatementVisitor) {
 
 func (r *Return) Accept(visitor StatementVisitor) {
 	visitor.VisitReturnStmt(*r)
+}
+
+func (c *Class) Accept(visitor StatementVisitor) {
+	visitor.VisitClassStmt(*c)
 }

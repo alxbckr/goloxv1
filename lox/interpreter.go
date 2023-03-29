@@ -79,6 +79,16 @@ func (i *Interpreter) VisitWhileStmt(stmt While) {
 	}
 }
 
+func (i *Interpreter) VisitBlockStmt(stmt Block) {
+	i.executeBlock(stmt.Statements, NewEnvironmentWithEnclosing(i.environment))
+}
+
+func (i *Interpreter) VisitClassStmt(stmt Class) {
+	i.environment.Define(stmt.Name.Lexeme, nil)
+	class := NewLoxClass(stmt.Name.Lexeme)
+	i.environment.Assign(stmt.Name, class)
+}
+
 func (i *Interpreter) VisitAssignExpr(expr Assign) interface{} {
 	value := i.evaluate(expr.Value)
 
@@ -220,10 +230,6 @@ func (i *Interpreter) execute(stmt Stmt) {
 
 func (i *Interpreter) Resolve(expr Expr, depth int) {
 	i.locals[expr] = depth
-}
-
-func (i *Interpreter) VisitBlockStmt(stmt Block) {
-	i.executeBlock(stmt.Statements, NewEnvironmentWithEnclosing(i.environment))
 }
 
 func (i *Interpreter) executeBlock(stmt []Stmt, environment *Environment) {
