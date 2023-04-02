@@ -11,6 +11,7 @@ type FunctionType int
 const (
 	NONE FunctionType = iota
 	FUNCTION
+	METHOD
 )
 
 type Resolver struct {
@@ -38,6 +39,11 @@ func (r *Resolver) VisitBlockStmt(stmt Block) {
 func (r *Resolver) VisitClassStmt(stmt Class) {
 	r.declare(stmt.Name)
 	r.define(stmt.Name)
+
+	for _, method := range stmt.Methods {
+		declaration := METHOD
+		r.resolveFunction(method, declaration)
+	}
 }
 
 func (r *Resolver) VisitExpressionStmt(stmt Expression) {
@@ -105,6 +111,11 @@ func (r *Resolver) VisitCallExpr(expr Call) interface{} {
 	return nil
 }
 
+func (r *Resolver) VisitGetExpr(expr Get) interface{} {
+	r.resolveExpression(expr.Object)
+	return nil
+}
+
 func (r *Resolver) VisitGroupingExpr(expr Grouping) interface{} {
 	r.resolveExpression(expr.Expression)
 	return nil
@@ -117,6 +128,12 @@ func (r *Resolver) VisitLiteralExpr(expr Literal) interface{} {
 func (r *Resolver) VisitLogicalExpr(expr Logical) interface{} {
 	r.resolveExpression(expr.Left)
 	r.resolveExpression(expr.Right)
+	return nil
+}
+
+func (r *Resolver) VisitSetExpr(expr Set) interface{} {
+	r.resolveExpression(expr.Value)
+	r.resolveExpression(expr.Object)
 	return nil
 }
 

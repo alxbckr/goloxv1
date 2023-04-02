@@ -9,6 +9,8 @@ type ExpressionVisitor interface {
 	VisitUnaryExpr(expr Unary) interface{}
 	VisitVariableExpr(expr Variable) interface{}
 	VisitAssignExpr(expr Assign) interface{}
+	VisitGetExpr(expr Get) interface{}
+	VisitSetExpr(expr Set) interface{}
 }
 
 type Expr interface {
@@ -53,6 +55,17 @@ type Variable struct {
 type Assign struct {
 	Name  Token
 	Value Expr
+}
+
+type Get struct {
+	Name   Token
+	Object Expr
+}
+
+type Set struct {
+	Name   Token
+	Object Expr
+	Value  Expr
 }
 
 func NewBinary(left Expr, operator Token, right Expr) *Binary {
@@ -141,4 +154,27 @@ func NewAssign(name Token, value Expr) *Assign {
 
 func (a *Assign) Accept(visitor ExpressionVisitor) interface{} {
 	return visitor.VisitAssignExpr(*a)
+}
+
+func NewGet(name Token, object Expr) *Get {
+	return &Get{
+		Name:   name,
+		Object: object,
+	}
+}
+
+func (g *Get) Accept(visitor ExpressionVisitor) interface{} {
+	return visitor.VisitGetExpr(*g)
+}
+
+func NewSet(object Expr, name Token, value Expr) *Set {
+	return &Set{
+		Name:   name,
+		Object: object,
+		Value:  value,
+	}
+}
+
+func (s *Set) Accept(visitor ExpressionVisitor) interface{} {
+	return visitor.VisitSetExpr(*s)
 }

@@ -85,7 +85,14 @@ func (i *Interpreter) VisitBlockStmt(stmt Block) {
 
 func (i *Interpreter) VisitClassStmt(stmt Class) {
 	i.environment.Define(stmt.Name.Lexeme, nil)
-	class := NewLoxClass(stmt.Name.Lexeme)
+
+	methods := make(map[string]LoxFunction)
+	for _, method := range stmt.Methods {
+		function := NewLoxFunction(method, i.environment)
+		methods[method.Name.Lexeme] = *function
+	}
+
+	class := NewLoxClass(stmt.Name.Lexeme, methods)
 	i.environment.Assign(stmt.Name, class)
 }
 
@@ -124,6 +131,19 @@ func (i *Interpreter) VisitLogicalExpr(expr Logical) interface{} {
 		return left
 	}
 	return i.evaluate(expr.Right)
+}
+
+func (i *Interpreter) VisitSetExpr(expr Set) interface{} {
+	object := i.evaluate(expr.Object)
+
+	obj, ok := (object).(*LoxInstance)
+	if !ok {
+		panic(NewRuntimeError(expr.Name, "only instances have fields."))
+	}
+
+	value := i.evaluate(expr.Value)
+	obj.Set(expr.Name, value)
+	return value
 }
 
 func (i *Interpreter) VisitGroupingExpr(expr Grouping) interface{} {
@@ -205,6 +225,14 @@ func (i *Interpreter) VisitCallExpr(expr Call) interface{} {
 	}
 
 	return f.Call(i, arguments)
+}
+
+func (i *Interpreter) VisitGetExpr(expr Get) interface{} {
+	object := i.evaluate(expr.Object)
+	if inst, ok := object.(*LoxInstance); ok {
+		return inst.Get(expr.Name)
+	}
+	panic(NewRuntimeError(expr.Name, "only instances have properties"))
 }
 
 func (i *Interpreter) VisitVariableExpr(expr Variable) interface{} {

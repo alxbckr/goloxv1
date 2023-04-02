@@ -232,6 +232,8 @@ func (p *Parser) assignment() Expr {
 		if v, ok := expr.(*Variable); ok {
 			name := v.Name
 			return NewAssign(name, value)
+		} else if g, ok := expr.(*Get); ok {
+			return NewSet(g.Object, g.Name, value)
 		}
 
 		p.reportError(equals, "invalid assignment target")
@@ -333,6 +335,9 @@ func (p *Parser) call() Expr {
 	for {
 		if p.match(LEFT_PAREN) {
 			expr = p.finishCall(expr)
+		} else if p.match(DOT) {
+			name := p.consume(IDENTIFIER, "expect property after '.'.")
+			expr = NewGet(name, expr)
 		} else {
 			break
 		}
