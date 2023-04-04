@@ -239,12 +239,16 @@ func (i *Interpreter) VisitVariableExpr(expr Variable) interface{} {
 	return i.lookUpVariable(expr.Name, &expr)
 }
 
+func (i *Interpreter) VisitThisExpr(expr This) interface{} {
+	return i.lookUpVariable(expr.Keyword, &expr)
+}
+
 func (i *Interpreter) lookUpVariable(name Token, expr Expr) interface{} {
 	distance, ok := i.locals[expr]
 	if ok {
 		return i.environment.GetAt(distance, name.Lexeme)
 	} else {
-		return i.globals.Get(name)
+		return i.environment.Get(name)
 	}
 }
 

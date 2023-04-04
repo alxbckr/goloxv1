@@ -25,7 +25,7 @@ func (i *LoxInstance) Get(name Token) interface{} {
 
 	method := i.Class.FindMethod(name.Lexeme)
 	if method != nil {
-		return method
+		return method.Bind(i)
 	}
 
 	panic(NewRuntimeError(name, fmt.Sprintf("undefined property %v .", name.Lexeme)))

@@ -358,6 +358,11 @@ func (p *Parser) primary() Expr {
 	if p.match(NUMBER, STRING) {
 		return NewLiteral(p.previous().Literal)
 	}
+
+	if p.match(THIS) {
+		return NewThis(p.previous())
+	}
+
 	if p.match(IDENTIFIER) {
 		return NewVariable(p.previous())
 	}

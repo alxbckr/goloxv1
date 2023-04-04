@@ -22,9 +22,11 @@ func (f *LoxFunction) Call(interpreter *Interpreter, arguments []interface{}) (r
 
 	defer func() {
 		val := recover()
-		if val != nil {
-			retVal = val.(*ReturnWrapper).Value
+		if wrapper, ok := val.(*ReturnWrapper); ok && wrapper != nil {
+			retVal = wrapper.Value
+			return
 		}
+		panic(val)
 	}()
 
 	interpreter.executeBlock(f.Declaration.Body, environment)
@@ -37,4 +39,10 @@ func (f *LoxFunction) Arity() int {
 
 func (f LoxFunction) String() string {
 	return fmt.Sprintf("<fn %v>", f.Declaration.Name.Lexeme)
+}
+
+func (f *LoxFunction) Bind(instance *LoxInstance) *LoxFunction {
+	environment := NewEnvironmentWithEnclosing(f.Closure)
+	environment.Define("this", instance)
+	return NewLoxFunction(f.Declaration, environment)
 }

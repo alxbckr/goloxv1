@@ -11,6 +11,7 @@ type ExpressionVisitor interface {
 	VisitAssignExpr(expr Assign) interface{}
 	VisitGetExpr(expr Get) interface{}
 	VisitSetExpr(expr Set) interface{}
+	VisitThisExpr(expr This) interface{}
 }
 
 type Expr interface {
@@ -66,6 +67,10 @@ type Set struct {
 	Name   Token
 	Object Expr
 	Value  Expr
+}
+
+type This struct {
+	Keyword Token
 }
 
 func NewBinary(left Expr, operator Token, right Expr) *Binary {
@@ -177,4 +182,14 @@ func NewSet(object Expr, name Token, value Expr) *Set {
 
 func (s *Set) Accept(visitor ExpressionVisitor) interface{} {
 	return visitor.VisitSetExpr(*s)
+}
+
+func NewThis(keyword Token) *This {
+	return &This{
+		Keyword: keyword,
+	}
+}
+
+func (t *This) Accept(visitor ExpressionVisitor) interface{} {
+	return visitor.VisitThisExpr(*t)
 }

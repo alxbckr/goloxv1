@@ -7,6 +7,7 @@ import (
 )
 
 type FunctionType int
+type ClassType int
 
 const (
 	NONE FunctionType = iota
@@ -14,10 +15,16 @@ const (
 	METHOD
 )
 
+const (
+	CLASS_NONE ClassType = iota
+	CLASS_CLASS
+)
+
 type Resolver struct {
 	interpreter     *Interpreter
 	scopes          lls.Stack
 	currentFunction FunctionType
+	currentClass    ClassType
 	hadRuntimeError bool
 }
 
@@ -26,6 +33,7 @@ func NewResolver(interpreter *Interpreter) *Resolver {
 		interpreter:     interpreter,
 		scopes:          *lls.New(),
 		currentFunction: NONE,
+		currentClass:    CLASS_NONE,
 		hadRuntimeError: false,
 	}
 }
@@ -37,13 +45,23 @@ func (r *Resolver) VisitBlockStmt(stmt Block) {
 }
 
 func (r *Resolver) VisitClassStmt(stmt Class) {
+	enclosingClass := r.currentClass
+	r.currentClass = CLASS_CLASS
+
 	r.declare(stmt.Name)
 	r.define(stmt.Name)
+
+	r.beginScope()
+	scope, _ := r.scopes.Peek()
+	scope.(map[string]bool)["this"] = true
 
 	for _, method := range stmt.Methods {
 		declaration := METHOD
 		r.resolveFunction(method, declaration)
 	}
+
+	r.currentClass = enclosingClass
+	r.endScope()
 }
 
 func (r *Resolver) VisitExpressionStmt(stmt Expression) {
@@ -151,6 +169,14 @@ func (r *Resolver) VisitVariableExpr(expr Variable) interface{} {
 	}
 
 	r.resolveLocal(&expr, expr.Name)
+	return nil
+}
+
+func (r *Resolver) VisitThisExpr(expr This) interface{} {
+	if r.currentClass == CLASS_NONE {
+		panic(NewLoxError(expr.Keyword, "can't use 'this' outside of a class"))
+	}
+	r.resolveLocal(&expr, expr.Keyword)
 	return nil
 }
 
