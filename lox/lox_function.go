@@ -3,14 +3,16 @@ package lox
 import "fmt"
 
 type LoxFunction struct {
-	Declaration Function
-	Closure     *Environment
+	Declaration   Function
+	Closure       *Environment
+	isInitializer bool
 }
 
-func NewLoxFunction(declaration Function, closure *Environment) *LoxFunction {
+func NewLoxFunction(declaration Function, closure *Environment, isInitializer bool) *LoxFunction {
 	return &LoxFunction{
-		Declaration: declaration,
-		Closure:     closure,
+		Declaration:   declaration,
+		Closure:       closure,
+		isInitializer: isInitializer,
 	}
 }
 
@@ -23,13 +25,20 @@ func (f *LoxFunction) Call(interpreter *Interpreter, arguments []interface{}) (r
 	defer func() {
 		val := recover()
 		if wrapper, ok := val.(*ReturnWrapper); ok && wrapper != nil {
-			retVal = wrapper.Value
+			if f.isInitializer {
+				retVal = f.Closure.GetAt(0, "this")
+			} else {
+				retVal = wrapper.Value
+			}
 			return
 		}
 		panic(val)
 	}()
 
 	interpreter.executeBlock(f.Declaration.Body, environment)
+	if f.isInitializer {
+		return f.Closure.GetAt(0, "this")
+	}
 	return nil
 }
 
@@ -44,5 +53,5 @@ func (f LoxFunction) String() string {
 func (f *LoxFunction) Bind(instance *LoxInstance) *LoxFunction {
 	environment := NewEnvironmentWithEnclosing(f.Closure)
 	environment.Define("this", instance)
-	return NewLoxFunction(f.Declaration, environment)
+	return NewLoxFunction(f.Declaration, environment, f.isInitializer)
 }

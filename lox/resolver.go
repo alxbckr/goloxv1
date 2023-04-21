@@ -12,6 +12,7 @@ type ClassType int
 const (
 	NONE FunctionType = iota
 	FUNCTION
+	INITIALIZER
 	METHOD
 )
 
@@ -57,6 +58,11 @@ func (r *Resolver) VisitClassStmt(stmt Class) {
 
 	for _, method := range stmt.Methods {
 		declaration := METHOD
+
+		if method.Name.Lexeme == "init" {
+			declaration = INITIALIZER
+		}
+
 		r.resolveFunction(method, declaration)
 	}
 
@@ -100,6 +106,9 @@ func (r *Resolver) VisitReturnStmt(stmt Return) {
 	}
 
 	if stmt.Value != nil {
+		if r.currentFunction == INITIALIZER {
+			panic(NewLoxError(stmt.Keyword, "can't return a value from an initializer."))
+		}
 		r.resolveExpression(stmt.Value)
 	}
 }

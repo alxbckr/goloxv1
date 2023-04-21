@@ -48,7 +48,7 @@ func (i *Interpreter) VisitExpressionStmt(stmt Expression) {
 }
 
 func (i *Interpreter) VisitFunctionStmt(stmt Function) {
-	function := NewLoxFunction(stmt, i.environment)
+	function := NewLoxFunction(stmt, i.environment, false)
 	i.environment.Define(stmt.Name.Lexeme, function)
 }
 
@@ -88,7 +88,7 @@ func (i *Interpreter) VisitClassStmt(stmt Class) {
 
 	methods := make(map[string]LoxFunction)
 	for _, method := range stmt.Methods {
-		function := NewLoxFunction(method, i.environment)
+		function := NewLoxFunction(method, i.environment, (method.Name.Lexeme == "init"))
 		methods[method.Name.Lexeme] = *function
 	}
 
