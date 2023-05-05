@@ -52,6 +52,20 @@ func (r *Resolver) VisitClassStmt(stmt Class) {
 	r.declare(stmt.Name)
 	r.define(stmt.Name)
 
+	if stmt.Superclass != nil && stmt.Name.Lexeme == stmt.Superclass.Name.Lexeme {
+		panic(NewLoxError(stmt.Superclass.Name, "a class can't inherit from itself."))
+	}
+
+	if stmt.Superclass != nil {
+		r.resolveExpression(stmt.Superclass)
+	}
+
+	if stmt.Superclass != nil {
+		r.beginScope()
+		scope, _ := r.scopes.Peek()
+		scope.(map[string]bool)["super"] = true
+	}
+
 	r.beginScope()
 	scope, _ := r.scopes.Peek()
 	scope.(map[string]bool)["this"] = true
@@ -64,6 +78,10 @@ func (r *Resolver) VisitClassStmt(stmt Class) {
 		}
 
 		r.resolveFunction(method, declaration)
+	}
+
+	if stmt.Superclass != nil {
+		r.endScope()
 	}
 
 	r.currentClass = enclosingClass
@@ -161,6 +179,11 @@ func (r *Resolver) VisitLogicalExpr(expr Logical) interface{} {
 func (r *Resolver) VisitSetExpr(expr Set) interface{} {
 	r.resolveExpression(expr.Value)
 	r.resolveExpression(expr.Object)
+	return nil
+}
+
+func (r *Resolver) VisitSuperExpr(expr Super) interface{} {
+	r.resolveLocal(&expr, expr.Keyword)
 	return nil
 }
 

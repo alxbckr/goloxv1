@@ -11,6 +11,7 @@ type ExpressionVisitor interface {
 	VisitAssignExpr(expr Assign) interface{}
 	VisitGetExpr(expr Get) interface{}
 	VisitSetExpr(expr Set) interface{}
+	VisitSuperExpr(expr Super) interface{}
 	VisitThisExpr(expr This) interface{}
 }
 
@@ -67,6 +68,11 @@ type Set struct {
 	Name   Token
 	Object Expr
 	Value  Expr
+}
+
+type Super struct {
+	Keyword Token
+	Method  Token
 }
 
 type This struct {
@@ -182,6 +188,17 @@ func NewSet(object Expr, name Token, value Expr) *Set {
 
 func (s *Set) Accept(visitor ExpressionVisitor) interface{} {
 	return visitor.VisitSetExpr(*s)
+}
+
+func NewSuper(keyword Token, method Token) *Super {
+	return &Super{
+		Keyword: keyword,
+		Method:  method,
+	}
+}
+
+func (s *Super) Accept(visitor ExpressionVisitor) interface{} {
+	return visitor.VisitSuperExpr(*s)
 }
 
 func NewThis(keyword Token) *This {

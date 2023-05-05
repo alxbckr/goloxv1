@@ -84,7 +84,21 @@ func (i *Interpreter) VisitBlockStmt(stmt Block) {
 }
 
 func (i *Interpreter) VisitClassStmt(stmt Class) {
+	var superclass *LoxClass
+	if stmt.Superclass != nil {
+		var ok bool
+		superclassEv := i.evaluate(stmt.Superclass)
+		if superclass, ok = superclassEv.(*LoxClass); !ok {
+			panic(NewRuntimeError(stmt.Superclass.Name, "superclass must be a class."))
+		}
+	}
+
 	i.environment.Define(stmt.Name.Lexeme, nil)
+
+	if stmt.Superclass != nil {
+		i.environment = NewEnvironmentWithEnclosing(i.environment)
+		i.environment.Define("super", superclass)
+	}
 
 	methods := make(map[string]LoxFunction)
 	for _, method := range stmt.Methods {
@@ -92,7 +106,12 @@ func (i *Interpreter) VisitClassStmt(stmt Class) {
 		methods[method.Name.Lexeme] = *function
 	}
 
-	class := NewLoxClass(stmt.Name.Lexeme, methods)
+	class := NewLoxClass(stmt.Name.Lexeme, superclass, methods)
+
+	if superclass != nil {
+		i.environment = i.environment.enclosing
+	}
+
 	i.environment.Assign(stmt.Name, class)
 }
 
@@ -144,6 +163,11 @@ func (i *Interpreter) VisitSetExpr(expr Set) interface{} {
 	value := i.evaluate(expr.Value)
 	obj.Set(expr.Name, value)
 	return value
+}
+
+func (i *Interpreter) VisitSuperExpr(expr Super) interface{} {
+	distance := i.locals[expr]
+	superclass := i.environment.GetAt(distance, "super")
 }
 
 func (i *Interpreter) VisitGroupingExpr(expr Grouping) interface{} {

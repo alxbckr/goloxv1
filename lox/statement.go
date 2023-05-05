@@ -57,7 +57,7 @@ type Return struct {
 
 type Class struct {
 	Name       Token
-	Superclass Variable
+	Superclass *Variable
 	Methods    []Function
 }
 
@@ -116,7 +116,7 @@ func NewReturn(keyword Token, value Expr) *Return {
 	}
 }
 
-func NewClass(name Token, superclass Variable, methods []Function) *Class {
+func NewClass(name Token, superclass *Variable, methods []Function) *Class {
 	return &Class{
 		Name:       name,
 		Superclass: superclass,
