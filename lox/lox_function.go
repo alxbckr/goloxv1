@@ -24,6 +24,10 @@ func (f *LoxFunction) Call(interpreter *Interpreter, arguments []interface{}) (r
 
 	defer func() {
 		val := recover()
+		if val == nil {
+			retVal = nil
+			return
+		}
 		if wrapper, ok := val.(*ReturnWrapper); ok && wrapper != nil {
 			if f.isInitializer {
 				retVal = f.Closure.GetAt(0, "this")

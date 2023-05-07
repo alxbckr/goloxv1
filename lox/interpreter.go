@@ -165,9 +165,17 @@ func (i *Interpreter) VisitSetExpr(expr Set) interface{} {
 	return value
 }
 
-func (i *Interpreter) VisitSuperExpr(expr Super) interface{} {
+func (i *Interpreter) VisitSuperExpr(expr *Super) interface{} {
 	distance := i.locals[expr]
-	superclass := i.environment.GetAt(distance, "super")
+	superclass := (i.environment.GetAt(distance, "super")).(*LoxClass)
+	object := (i.environment.GetAt(distance-1, "this")).(*LoxInstance)
+	method := superclass.FindMethod(expr.Method.Lexeme)
+
+	if method == nil {
+		panic(NewRuntimeError(expr.Method, fmt.Sprintf("undefined property '%v'.", expr.Method.Lexeme)))
+	}
+
+	return method.Bind(object)
 }
 
 func (i *Interpreter) VisitGroupingExpr(expr Grouping) interface{} {
@@ -299,6 +307,8 @@ func (i *Interpreter) executeBlock(stmt []Stmt, environment *Environment) {
 	for _, s := range stmt {
 		i.execute(s)
 	}
+
+	i.environment = previous
 }
 
 func isTruthy(value interface{}) bool {

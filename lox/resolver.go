@@ -19,6 +19,7 @@ const (
 const (
 	CLASS_NONE ClassType = iota
 	CLASS_CLASS
+	CLASS_SUBCLASS
 )
 
 type Resolver struct {
@@ -57,6 +58,7 @@ func (r *Resolver) VisitClassStmt(stmt Class) {
 	}
 
 	if stmt.Superclass != nil {
+		r.currentClass = CLASS_SUBCLASS
 		r.resolveExpression(stmt.Superclass)
 	}
 
@@ -182,8 +184,13 @@ func (r *Resolver) VisitSetExpr(expr Set) interface{} {
 	return nil
 }
 
-func (r *Resolver) VisitSuperExpr(expr Super) interface{} {
-	r.resolveLocal(&expr, expr.Keyword)
+func (r *Resolver) VisitSuperExpr(expr *Super) interface{} {
+	if r.currentClass == CLASS_NONE {
+		panic(NewLoxError(expr.Keyword, "can't use 'super' outside of a class"))
+	} else if r.currentClass != CLASS_SUBCLASS {
+		panic(NewLoxError(expr.Keyword, "can't use 'super' in a class with no superclass"))
+	}
+	r.resolveLocal(expr, expr.Keyword)
 	return nil
 }
 

@@ -11,7 +11,7 @@ type ExpressionVisitor interface {
 	VisitAssignExpr(expr Assign) interface{}
 	VisitGetExpr(expr Get) interface{}
 	VisitSetExpr(expr Set) interface{}
-	VisitSuperExpr(expr Super) interface{}
+	VisitSuperExpr(expr *Super) interface{}
 	VisitThisExpr(expr This) interface{}
 }
 
@@ -198,7 +198,7 @@ func NewSuper(keyword Token, method Token) *Super {
 }
 
 func (s *Super) Accept(visitor ExpressionVisitor) interface{} {
-	return visitor.VisitSuperExpr(*s)
+	return visitor.VisitSuperExpr(s)
 }
 
 func NewThis(keyword Token) *This {
